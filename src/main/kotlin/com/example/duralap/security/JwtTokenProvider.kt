@@ -13,17 +13,39 @@ class JwtTokenProvider {
     @Value("\${app.jwt.secret:mySecretKey}")
     private lateinit var jwtSecret: String
 
-    @Value("\${app.jwt.expiration-in-ms:86400000}") // 24 hours default
+    @Value("\${app.jwt.expiration-in-ms:86400000}") // 24 hours default for access token
     private var jwtExpirationInMs: Long = 86400000
+
+    @Value("\${app.jwt.refresh-expiration-in-ms:604800000}") // 7 days default for refresh token
+    private var jwtRefreshExpirationInMs: Long = 604800000
 
     private val secretKey: Key by lazy {
         Keys.hmacShaKeyFor(jwtSecret.toByteArray())
     }
 
     /**
-     * Generate JWT token
+     * Generate Access Token
      */
-    fun generateToken(username: String): String {
+    fun generateAccessToken(username: String, roles: Set<String>): String {
+        val claims = mutableMapOf<String, Any>()
+        claims["sub"] = username
+        claims["created"] = Date()
+        claims["roles"] = roles.joinToString(",")
+
+        return Jwts.builder()
+            .setClaims(claims)
+            .setSubject(username)
+            .setIssuedAt(Date())
+            .setExpiration(Date(System.currentTimeMillis() + jwtExpirationInMs))
+            .claim("token_type", "access_token")
+            .signWith(secretKey, SignatureAlgorithm.HS512)
+            .compact()
+    }
+
+    /**
+     * Generate Refresh Token
+     */
+    fun generateRefreshToken(username: String): String {
         val claims = mutableMapOf<String, Any>()
         claims["sub"] = username
         claims["created"] = Date()
@@ -32,7 +54,8 @@ class JwtTokenProvider {
             .setClaims(claims)
             .setSubject(username)
             .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + jwtExpirationInMs))
+            .setExpiration(Date(System.currentTimeMillis() + jwtRefreshExpirationInMs))
+            .claim("token_type", "refresh_token")
             .signWith(secretKey, SignatureAlgorithm.HS512)
             .compact()
     }
@@ -42,7 +65,16 @@ class JwtTokenProvider {
      */
     fun getUsernameFromToken(token: String): String {
         val claims = getClaimsFromToken(token)
-        return claims.subject
+        return claims.subject ?: throw IllegalArgumentException("Token subject is null")
+    }
+
+    /**
+     * Get roles from JWT token
+     */
+    fun getRolesFromToken(token: String): Set<String> {
+        val claims = getClaimsFromToken(token)
+        val rolesString = claims["roles"] as? String ?: return emptySet()
+        return rolesString.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     }
 
     /**
@@ -52,6 +84,30 @@ class JwtTokenProvider {
         return try {
             getClaimsFromToken(token)
             !isTokenExpired(token)
+        } catch (ex: JwtException) {
+            false
+        }
+    }
+
+    /**
+     * Check if token is an access token
+     */
+    fun isAccessToken(token: String?): Boolean {
+        return token != null && try {
+            val claims = getClaimsFromToken(token)
+            "access_token" == claims["token_type"]
+        } catch (ex: JwtException) {
+            false
+        }
+    }
+
+    /**
+     * Check if token is a refresh token
+     */
+    fun isRefreshToken(token: String?): Boolean {
+        return token != null && try {
+            val claims = getClaimsFromToken(token)
+            "refresh_token" == claims["token_type"]
         } catch (ex: JwtException) {
             false
         }

@@ -1,10 +1,10 @@
 package com.example.duralap.controller
 
-import com.example.duralap.database.dto.LoginRequest
-import com.example.duralap.database.dto.LoginResponse
-import com.example.duralap.database.dto.toUserResponse
+import com.example.duralap.database.dto.*
+import com.example.duralap.database.model.User
 import com.example.duralap.database.repository.UserRepository
 import com.example.duralap.security.JwtTokenProvider
+import com.example.duralap.service.RefreshTokenService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
@@ -15,30 +15,25 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = ["http://localhost:3000"]) // Adjust for your frontend
+@CrossOrigin(origins = ["http://localhost:3000"])
 class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val jwtTokenProvider: JwtTokenProvider,
+    private val refreshTokenService: RefreshTokenService,
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder
 ) {
 
-    /**
-     * User login
-     */
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
         return try {
-            // Find user by username or email
             val user = userRepository.findByUsernameOrEmail(request.usernameOrEmail)
                 .orElseThrow { IllegalArgumentException("Invalid credentials") }
 
-            // Check password
             if (!passwordEncoder.matches(request.password, user.password)) {
                 throw IllegalArgumentException("Invalid credentials")
             }
 
-            // Authenticate user
             val authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(
                     user.username,
@@ -47,48 +42,86 @@ class AuthController(
             )
             SecurityContextHolder.getContext().authentication = authentication
 
-            // Generate JWT token
-            val token = jwtTokenProvider.generateToken(user.username)
+            val roles = user.roles.map { "ROLE_${it.name}" }.toSet()
+            val accessToken = jwtTokenProvider.generateAccessToken(user.username, roles)
+            val refreshToken = refreshTokenService.createRefreshToken(user)
 
-            // Update last seen
             val updatedUser = user.copy(lastSeen = java.time.Instant.now())
             userRepository.save(updatedUser)
 
-            val response = LoginResponse(
-                token = token,
+            val authResponse = AuthResponse(
+                accessToken = accessToken,
+                refreshToken = refreshToken.token,
+                expiresIn = 86400, // 24 hours in seconds
                 user = updatedUser.toUserResponse()
             )
 
-            ResponseEntity.ok(response)
+            ResponseEntity.ok(authResponse)
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()
         }
     }
+
+    @PostMapping("/refresh")
+    fun refreshToken(@Valid @RequestBody request: TokenRefreshRequest): ResponseEntity<AuthResponse> {
+        val refreshToken = refreshTokenService.findByToken(request.refreshToken)
+            .orElseThrow { RuntimeException("Refresh token not found") }
+
+        refreshTokenService.verifyExpiration(refreshToken)
+
+        val user = userRepository.findById(refreshToken.userId)
+            .orElseThrow { IllegalArgumentException("User not found") }
+
+        val roles = user.roles.map { "ROLE_${it.name}" }.toSet()
+        val newAccessToken = jwtTokenProvider.generateAccessToken(user.username, roles)
+        val newRefreshToken = refreshTokenService.createRefreshToken(user) // Create new refresh token
+
+        // Optionally revoke the old refresh token
+        refreshTokenService.revokeToken(request.refreshToken)
+
+        val updatedUser = user.copy(lastSeen = java.time.Instant.now())
+        userRepository.save(updatedUser)
+
+        val authResponse = AuthResponse(
+            accessToken = newAccessToken,
+            refreshToken = newRefreshToken.token,
+            expiresIn = 86400, // 24 hours in seconds
+            user = updatedUser.toUserResponse()
+        )
+
+        return ResponseEntity.ok(authResponse)
     }
 
-    /**
-     * Get current user profile
-     */
+    @PostMapping("/logout")
+    fun logout(@RequestHeader("Authorization") token: String?): ResponseEntity<Any> {
+        try {
+            val jwt = token?.substring(7) // Remove "Bearer " prefix
+            
+            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
+                // Extract username from the token
+                val username = jwtTokenProvider.getUsernameFromToken(jwt)
+                
+                // Find user and invalidate their refresh tokens
+                val user = userRepository.findByUsername(username)
+                    .orElseThrow { IllegalArgumentException("User not found") }
+                
+                refreshTokenService.revokeAllTokensForUser(user.id!!)
+            }
+            
+            return ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            return ResponseEntity.badRequest().build()
+        }
+    }
+
     @GetMapping("/profile")
-    fun getCurrentUser(): ResponseEntity<com.example.duralap.database.dto.UserResponse> {
+    fun getCurrentUser(): ResponseEntity<UserResponse> {
         val authentication = SecurityContextHolder.getContext().authentication
-        val username = authentication.name
+        val username = authentication?.name ?: return ResponseEntity.badRequest().build()
 
         val user = userRepository.findByUsername(username)
             .orElseThrow { IllegalArgumentException("User not found") }
 
         return ResponseEntity.ok(user.toUserResponse())
-    }
-
-    /**
-     * Refresh token
-     */
-    @PostMapping("/refresh")
-    fun refreshToken(): ResponseEntity<Map<String, String>> {
-        val authentication = SecurityContextHolder.getContext().authentication
-        val username = authentication.name
-
-        val token = jwtTokenProvider.generateToken(username)
-        return ResponseEntity.ok(mapOf("token" to token))
     }
 }

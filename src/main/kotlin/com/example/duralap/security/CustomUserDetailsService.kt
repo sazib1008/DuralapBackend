@@ -18,10 +18,21 @@ class CustomUserDetailsService(
         val user = userRepository.findByUsername(username)
             .orElseThrow { UsernameNotFoundException("User not found with username or email: $username") }
 
+        // Ensure password is not null for regular users
+        val userPassword = if (user.isOAuth2User) {
+            "" // OAuth2 users don't have passwords stored locally
+        } else {
+            user.password ?: throw IllegalStateException("Regular user must have a password")
+        }
+
         // Convert our User entity to Spring Security UserDetails
         return User(
             user.username,
-            user.password,
+            userPassword,
+            true, // enabled
+            true, // account not expired
+            true, // credentials not expired
+            true, // account not locked
             mapRolesToAuthorities(user.roles)
         )
     }

@@ -37,6 +37,8 @@ class SecurityConfig(
                     .requestMatchers("/api/users/check-username/**", "/api/users/check-email/**").permitAll() // Allow username/email check
                     .requestMatchers("/websocket/**").permitAll() // WebSocket endpoints
                     .requestMatchers("/actuator/**").permitAll() // Actuator endpoints
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/api/moderator/**").hasAnyRole("MODERATOR", "ADMIN")
                     .anyRequest().authenticated()
             }
 

@@ -17,7 +17,7 @@ data class User(
     @Indexed(unique = true)
     val email: String,                    // Unique email
 
-    val password: String,                 // Encrypted password (BCrypt)
+    val password: String? = null,         // Encrypted password (BCrypt) - nullable for OAuth2 users
 
     val fullName: String? = null,         // Optional full name
     val bio: String? = null,              // Optional bio
@@ -33,6 +33,12 @@ data class User(
     val currentCallId: String? = null,    // Current active call ID (optional)
 
     val roles: Set<Role> = setOf(Role.USER),     // Multiple roles allowed
+
+    // OAuth2 related fields
+    val provider: String? = null,          // OAuth2 provider (google, facebook, github, etc.)
+    val providerId: String? = null,        // Provider's unique user ID
+    val providerUsername: String? = null,  // Username from OAuth2 provider
+    val isOAuth2User: Boolean = false,     // Flag to identify OAuth2 users
 
     val createdAt: Instant = Instant.now(),
     val updatedAt: Instant = Instant.now()

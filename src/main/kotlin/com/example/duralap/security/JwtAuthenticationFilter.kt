@@ -30,22 +30,25 @@ class JwtAuthenticationFilter(
             // Get JWT token from HTTP request
             val token = getJwtTokenFromRequest(request)
 
-            // Validate token and extract username
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-                val username = jwtTokenProvider.getUsernameFromToken(token)
+            if (token != null && StringUtils.hasText(token)) {
+                // Validate token and check if it's an access token
+                if (isValidAccessToken(token)) {
+                    val username = getUsernameSafely(token)
+                    
+                    username?.let { 
+                        // Load user associated with the token
+                        val userDetails = userDetailsService.loadUserByUsername(it)
 
-                // Load user associated with the token
-                val userDetails = userDetailsService.loadUserByUsername(username)
-
-                if (userDetails != null) {
-                    // Set authenticated user in Spring Security context
-                    val authentication = UsernamePasswordAuthenticationToken(
-                        userDetails.username,
-                        userDetails.password,
-                        userDetails.authorities
-                    )
-                    authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-                    SecurityContextHolder.getContext().authentication = authentication
+                        // Set authenticated user in Spring Security context
+                        val authorities = userDetails.authorities
+                        val authentication = UsernamePasswordAuthenticationToken(
+                            userDetails.username,
+                            userDetails.password,
+                            authorities
+                        )
+                        authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+                        SecurityContextHolder.getContext().authentication = authentication
+                    }
                 }
             }
         } catch (ex: Exception) {
@@ -53,6 +56,24 @@ class JwtAuthenticationFilter(
         }
 
         filterChain.doFilter(request, response)
+    }
+
+    private fun isValidAccessToken(token: String): Boolean {
+        return try {
+            jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)
+        } catch (ex: Exception) {
+            logger.debug("Token validation failed: ${ex.message}")
+            false
+        }
+    }
+
+    private fun getUsernameSafely(token: String): String? {
+        return try {
+            jwtTokenProvider.getUsernameFromToken(token)
+        } catch (ex: Exception) {
+            logger.debug("Failed to extract username from token: ${ex.message}")
+            null
+        }
     }
 
     private fun getJwtTokenFromRequest(request: HttpServletRequest): String? {
