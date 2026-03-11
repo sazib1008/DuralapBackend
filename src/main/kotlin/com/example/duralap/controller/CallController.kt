@@ -75,6 +75,15 @@ class CallController(
         return ResponseEntity.ok(calls)
     }
 
+    @GetMapping("/history/user/{userId}")
+    fun getCallHistoryList(
+        @PathVariable userId: String,
+        @RequestParam(defaultValue = "50") limit: Int
+    ): ResponseEntity<List<CallHistoryItemResponse>> {
+        val calls = callService.getCallHistoryList(userId, limit)
+        return ResponseEntity.ok(calls)
+    }
+
     @GetMapping("/ongoing")
     fun getOngoingCalls(): ResponseEntity<List<CallResponse>> {
         val calls = callService.getOngoingCalls()

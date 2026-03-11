@@ -4,7 +4,9 @@ import com.example.duralap.database.dto.*
 import com.example.duralap.database.repository.UserRepository
 import com.example.duralap.security.JwtTokenProvider
 import com.example.duralap.service.RefreshTokenService
+import com.example.duralap.service.UserService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -20,9 +22,18 @@ class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val jwtTokenProvider: JwtTokenProvider,
     private val refreshTokenService: RefreshTokenService,
+    private val userService: UserService,
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder
 ) {
+
+    @PostMapping("/register")
+    fun register(@Valid @RequestBody request: UserCreateRequest): ResponseEntity<UserResponse> {
+        // Enforce USER role for public registration
+        val secureRequest = request.copy(roles = setOf(com.example.duralap.database.model.Role.USER))
+        val user = userService.createUser(secureRequest)
+        return ResponseEntity.status(HttpStatus.CREATED).body(user)
+    }
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {

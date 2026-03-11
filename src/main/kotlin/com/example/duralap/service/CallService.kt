@@ -9,6 +9,7 @@ import com.example.duralap.service.cache.UserPresenceCache
 import com.example.duralap.service.signaling.CallSignalingService
 import com.example.duralap.service.signaling.WebRtcSignalPayload
 import com.example.duralap.service.signaling.SignalType
+import com.example.duralap.database.repository.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +20,8 @@ import java.util.*
 class CallService(
     private val callRepository: CallRepository,
     private val presenceCache: UserPresenceCache,
-    private val callSignalingService: CallSignalingService
+    private val callSignalingService: CallSignalingService,
+    private val userRepository: UserRepository
 ) {
 
     @Transactional
@@ -139,6 +141,33 @@ class CallService(
             .sortedByDescending { it.createdAt }
             .take(limit)
             .map { it.toCallResponse() }
+    }
+
+    fun getCallHistoryList(userId: String, limit: Int = 50): List<CallHistoryItemResponse> {
+        return callRepository.findRecentCallsForUser(userId)
+            .sortedByDescending { it.createdAt }
+            .take(limit)
+            .map { call ->
+                val otherUserId = if (call.callerId == userId) call.calleeId else call.callerId
+                val isIncoming = call.calleeId == userId
+                val otherUser = userRepository.findByIdOrNull(otherUserId)?.toUserResponse()?.toPublicProfile()
+                
+                CallHistoryItemResponse(
+                    id = call.id ?: throw IllegalStateException("Call ID cannot be null"),
+                    conversationId = call.conversationId,
+                    callerId = call.callerId,
+                    calleeId = call.calleeId,
+                    callType = call.callType,
+                    status = call.status,
+                    startTime = call.startTime,
+                    endTime = call.endTime,
+                    duration = call.duration,
+                    createdAt = call.createdAt,
+                    updatedAt = call.updatedAt,
+                    otherUser = otherUser,
+                    isIncoming = isIncoming
+                )
+            }
     }
 
     fun getOngoingCalls(): List<CallResponse> {
