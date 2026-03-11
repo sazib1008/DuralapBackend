@@ -2,45 +2,44 @@ package com.example.duralap.service
 
 import com.example.duralap.database.dto.*
 import com.example.duralap.database.model.Message
-import com.example.duralap.database.repository.ConversationRepository
+import com.example.duralap.database.model.MessageType
 import com.example.duralap.database.repository.MessageRepository
-import com.example.duralap.database.repository.UserRepository
+import com.example.duralap.events.MessageCreatedEvent
+import com.example.duralap.service.cache.ConversationValidationCache
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.*
 
 @Service
 class MessageService(
-    private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository
+    private val kafkaTemplate: KafkaTemplate<String, MessageCreatedEvent>,
+    private val conversationValidator: ConversationValidationCache,
+    private val messageRepository: MessageRepository
 ) {
 
+    private val MESSAGE_EVENTS_TOPIC = "chat.events.message.created"
+
     /**
-     * Send a new message
+     * CQRS Command Side: Emits an event rapidly to Kafka.
+     * Persistence and final delivery are handled asynchronously by consumers.
      */
     fun sendMessage(request: MessageCreateRequest): MessageResponse {
-        // Validate conversation exists
-        if (!conversationRepository.existsById(request.conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
+        val transactionId = UUID.randomUUID().toString()
+        val timestamp = Instant.now()
+        
+        // Fast, highly available caching layer lookup (Redis)
+        conversationValidator.verifyUserParticipantInConversation(
+            userId = request.senderId, 
+            conversationId = request.conversationId
+        )
 
-        // Validate sender exists
-        if (!userRepository.existsById(request.senderId)) {
-            throw IllegalArgumentException("Sender does not exist")
-        }
-
-        // Check if sender is a participant in the conversation
-        val conversation = conversationRepository.findByIdOrNull(request.conversationId)
-        if (conversation?.participantIds?.contains(request.senderId) == false) {
-            throw IllegalArgumentException("Sender is not a participant in this conversation")
-        }
-
-        val message = Message(
-            id = UUID.randomUUID().toString(),
+        // Optimistic UI Model Construction
+        val event = MessageCreatedEvent(
+            id = transactionId,
             conversationId = request.conversationId,
             senderId = request.senderId,
             content = request.content,
@@ -49,25 +48,38 @@ class MessageService(
             mediaType = request.mediaType,
             fileName = request.fileName,
             fileSize = request.fileSize,
-            createdAt = Instant.now(),
-            updatedAt = Instant.now()
+            timestamp = timestamp
         )
 
-        val savedMessage = messageRepository.save(message)
-        return savedMessage.toMessageResponse()
+        // Fire & Forget to Kafka with idempotency key (id) for partition distribution
+        // ConversationId acts as partition key ensuring strict ordering per conversation.
+        kafkaTemplate.send(MESSAGE_EVENTS_TOPIC, request.conversationId, event)
+
+        // Return early. Client observes optimistic state; WebSockets guarantee final confirmation.
+        return MessageResponse(
+            id = transactionId,
+            conversationId = request.conversationId,
+            senderId = request.senderId,
+            content = request.content,
+            messageType = request.messageType,
+            mediaUrl = request.mediaUrl,
+            mediaType = request.mediaType,
+            fileName = request.fileName,
+            fileSize = request.fileSize,
+            isRead = false,
+            readAt = null,
+            createdAt = timestamp,
+            updatedAt = timestamp
+        )
     }
 
     /**
-     * Get messages for a conversation
+     * CQRS Query Side: Reads exclusively from secondary nodes/replicas.
+     * Heavily indexed on { conversationId: 1, createdAt: -1 }
      */
     fun getMessages(conversationId: String, page: Int = 0, size: Int = 20): List<MessageResponse> {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         val pageable: Pageable = PageRequest.of(page, size)
         val messages = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable).content
-
         return messages.reversed().map { it.toMessageResponse() }
     }
 
@@ -75,10 +87,6 @@ class MessageService(
      * Get all messages for a conversation (without pagination)
      */
     fun getAllMessages(conversationId: String): List<MessageResponse> {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         val messages = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId)
         return messages.reversed().map { it.toMessageResponse() }
     }
@@ -97,13 +105,8 @@ class MessageService(
         val message = messageRepository.findByIdOrNull(messageId)
             ?: throw IllegalArgumentException("Message not found")
 
-        // Verify user is a participant in the conversation
-        val conversation = conversationRepository.findByIdOrNull(message.conversationId)
-        if (conversation?.participantIds?.contains(userId) == false) {
-            throw IllegalArgumentException("User is not a participant in this conversation")
-        }
+        conversationValidator.verifyUserParticipantInConversation(userId, message.conversationId)
 
-        // Only mark as read if the message is not sent by the user themselves
         if (message.senderId != userId) {
             val updatedMessage = message.copy(
                 isRead = true,
@@ -122,10 +125,6 @@ class MessageService(
      * Mark all messages in conversation as read
      */
     fun markAllMessagesAsRead(conversationId: String, userId: String) {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         val messages = messageRepository.markMessagesAsRead(conversationId, userId)
         messages.forEach { message ->
             val updatedMessage = message.copy(
@@ -141,10 +140,6 @@ class MessageService(
      * Get unread messages count for a user in a conversation
      */
     fun getUnreadMessagesCount(conversationId: String, userId: String): Long {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         return messageRepository.countUnreadMessages(conversationId, userId)
     }
 
@@ -152,10 +147,6 @@ class MessageService(
      * Get unread messages for a user in a conversation
      */
     fun getUnreadMessages(conversationId: String, userId: String): List<MessageResponse> {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         val messages = messageRepository.findUnreadMessages(conversationId, userId)
         return messages.map { it.toMessageResponse() }
     }
@@ -164,10 +155,6 @@ class MessageService(
      * Get last message in a conversation
      */
     fun getLastMessage(conversationId: String): MessageResponse? {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
         val message = messageRepository.findFirstByConversationIdOrderByCreatedAtDesc(conversationId)
         return message?.toMessageResponse()
     }
@@ -179,7 +166,6 @@ class MessageService(
         val message = messageRepository.findByIdOrNull(id)
             ?: throw IllegalArgumentException("Message not found")
 
-        // Only allow deletion if the user is the sender
         if (message.senderId != userId) {
             throw IllegalArgumentException("Only sender can delete the message")
         }
@@ -191,31 +177,19 @@ class MessageService(
     /**
      * Get messages by type
      */
-    fun getMessagesByType(conversationId: String, messageType: com.example.duralap.database.model.MessageType): List<MessageResponse> {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
-        val messages = messageRepository.findByMessageType(messageType)
-            .filter { it.conversationId == conversationId }
+    fun getMessagesByType(conversationId: String, messageType: MessageType): List<MessageResponse> {
+        return messageRepository.findByConversationIdAndMessageType(conversationId, messageType)
             .sortedByDescending { it.createdAt }
-
-        return messages.map { it.toMessageResponse() }
+            .map { it.toMessageResponse() }
     }
 
     /**
      * Get messages with media in a conversation
      */
     fun getMediaMessages(conversationId: String): List<MessageResponse> {
-        if (!conversationRepository.existsById(conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
-        val messages = messageRepository.findMessagesWithMedia()
-            .filter { it.conversationId == conversationId }
+        return messageRepository.findByConversationIdAndMediaUrlIsNotNull(conversationId)
             .sortedByDescending { it.createdAt }
-
-        return messages.map { it.toMessageResponse() }
+            .map { it.toMessageResponse() }
     }
 }
 

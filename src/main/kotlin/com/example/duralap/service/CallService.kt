@@ -5,41 +5,31 @@ import com.example.duralap.database.model.Call
 import com.example.duralap.database.model.CallStatus
 import com.example.duralap.database.model.CallType
 import com.example.duralap.database.repository.CallRepository
-import com.example.duralap.database.repository.ConversationRepository
+import com.example.duralap.service.cache.UserPresenceCache
+import com.example.duralap.service.signaling.CallSignalingService
+import com.example.duralap.service.signaling.WebRtcSignalPayload
+import com.example.duralap.service.signaling.SignalType
 import com.example.duralap.database.repository.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.*
 
 @Service
 class CallService(
     private val callRepository: CallRepository,
-    private val conversationRepository: ConversationRepository,
+    private val presenceCache: UserPresenceCache,
+    private val callSignalingService: CallSignalingService,
     private val userRepository: UserRepository
 ) {
 
-    /**
-     * Initiate a new call (WhatsApp-like calling)
-     */
+    @Transactional
     fun initiateCall(request: CallInitiateRequest): CallResponse {
-        // Validate users exist
-        if (!userRepository.existsById(request.callerId)) {
-            throw IllegalArgumentException("Caller does not exist")
-        }
-        if (!userRepository.existsById(request.calleeId)) {
-            throw IllegalArgumentException("Callee does not exist")
-        }
+        // Optional presence validation could go here. For now, we initiate regardless.
+        // if (!presenceCache.isUserOnline(request.calleeId)) { ... }
 
-        // Validate conversation exists
-        if (!conversationRepository.existsById(request.conversationId)) {
-            throw IllegalArgumentException("Conversation does not exist")
-        }
-
-        // Check if callee is already in a call
-        val activeCalls = callRepository.findActiveCallsForUser(request.calleeId)
-        if (activeCalls.isNotEmpty()) {
-            // Create busy call record
+        if (callRepository.countCallsByStatusForUser(request.calleeId, CallStatus.ACTIVE) > 0) {
             val busyCall = Call(
                 id = UUID.randomUUID().toString(),
                 conversationId = request.conversationId,
@@ -50,17 +40,9 @@ class CallService(
                 createdAt = Instant.now(),
                 updatedAt = Instant.now()
             )
-            val savedCall = callRepository.save(busyCall)
-            return savedCall.toCallResponse()
+            return callRepository.save(busyCall).toCallResponse()
         }
 
-        // Check if caller is already in a call
-        val callerActiveCalls = callRepository.findActiveCallsForUser(request.callerId)
-        if (callerActiveCalls.isNotEmpty()) {
-            throw IllegalArgumentException("You are already in a call")
-        }
-
-        // Create new call
         val call = Call(
             id = UUID.randomUUID().toString(),
             conversationId = request.conversationId,
@@ -72,85 +54,59 @@ class CallService(
             updatedAt = Instant.now()
         )
 
-        val savedCall = callRepository.save(call)
-        return savedCall.toCallResponse()
+        return callRepository.save(call).toCallResponse()
     }
 
-    /**
-     * Accept an incoming call
-     */
     fun acceptCall(callId: String, userId: String): CallResponse {
         val call = callRepository.findByIdOrNull(callId)
             ?: throw IllegalArgumentException("Call not found")
 
-        // Verify user is the callee
         if (call.calleeId != userId) {
             throw IllegalArgumentException("You are not the callee for this call")
         }
 
-        // Check if call is still ringing
         if (call.status != CallStatus.RINGING) {
             throw IllegalArgumentException("Call is no longer ringing")
         }
 
-        // Update call status to active
         val updatedCall = call.copy(
             status = CallStatus.ACTIVE,
             startTime = Instant.now(),
             updatedAt = Instant.now()
         )
 
-        val savedCall = callRepository.save(updatedCall)
-        return savedCall.toCallResponse()
+        return callRepository.save(updatedCall).toCallResponse()
     }
 
-    /**
-     * Reject an incoming call
-     */
     fun rejectCall(callId: String, userId: String): CallResponse {
         val call = callRepository.findByIdOrNull(callId)
             ?: throw IllegalArgumentException("Call not found")
 
-        // Verify user is the callee
         if (call.calleeId != userId) {
             throw IllegalArgumentException("You are not the callee for this call")
         }
 
-        // Check if call is still ringing
-        if (call.status != CallStatus.RINGING) {
-            throw IllegalArgumentException("Call is no longer ringing")
-        }
-
-        // Update call status to rejected
         val updatedCall = call.copy(
             status = CallStatus.REJECTED,
             endTime = Instant.now(),
             updatedAt = Instant.now()
         )
 
-        val savedCall = callRepository.save(updatedCall)
-        return savedCall.toCallResponse()
+        return callRepository.save(updatedCall).toCallResponse()
     }
 
-    /**
-     * End a call
-     */
     fun endCall(callId: String, userId: String): CallResponse {
         val call = callRepository.findByIdOrNull(callId)
             ?: throw IllegalArgumentException("Call not found")
 
-        // Verify user is participant in the call
         if (call.callerId != userId && call.calleeId != userId) {
             throw IllegalArgumentException("You are not a participant in this call")
         }
 
-        // Calculate duration if call was active
         val duration = if (call.startTime != null) {
-            val endTime = Instant.now()
-            java.time.Duration.between(call.startTime, endTime).seconds
+            java.time.Duration.between(call.startTime, Instant.now()).seconds
         } else null
 
-        // Update call status to ended
         val updatedCall = call.copy(
             status = CallStatus.ENDED,
             endTime = Instant.now(),
@@ -158,119 +114,107 @@ class CallService(
             updatedAt = Instant.now()
         )
 
-        val savedCall = callRepository.save(updatedCall)
-        return savedCall.toCallResponse()
+        return callRepository.save(updatedCall).toCallResponse()
     }
 
-    /**
-     * Get call by ID
-     */
     fun getCallById(callId: String): CallResponse? {
         return callRepository.findByIdOrNull(callId)?.toCallResponse()
     }
 
-    /**
-     * Get active calls for user
-     */
     fun getActiveCallsForUser(userId: String): List<CallResponse> {
-        if (!userRepository.existsById(userId)) {
-            throw IllegalArgumentException("User does not exist")
-        }
-
-        val calls = callRepository.findActiveCallsForUser(userId)
-        return calls.map { it.toCallResponse() }
+        return callRepository.findActiveCallsForUser(userId).map { it.toCallResponse() }
     }
 
-    /**
-     * Get recent calls for user
-     */
     fun getRecentCallsForUser(userId: String, limit: Int = 20): List<CallResponse> {
-        if (!userRepository.existsById(userId)) {
-            throw IllegalArgumentException("User does not exist")
-        }
-
-        val calls = callRepository.findRecentCallsForUser(userId)
+        return callRepository.findRecentCallsForUser(userId)
             .sortedByDescending { it.createdAt }
             .take(limit)
-        
-        return calls.map { it.toCallResponse() }
+            .map { it.toCallResponse() }
     }
 
-    /**
-     * Get missed calls for user
-     */
     fun getMissedCallsForUser(userId: String): List<CallResponse> {
-        if (!userRepository.existsById(userId)) {
-            throw IllegalArgumentException("User does not exist")
-        }
-
-        val calls = callRepository.findMissedCallsForUser(userId)
-        return calls.map { it.toCallResponse() }
+        return callRepository.findMissedCallsForUser(userId).map { it.toCallResponse() }
     }
 
-    /**
-     * Get call history between two users
-     */
     fun getCallHistory(user1Id: String, user2Id: String, limit: Int = 50): List<CallResponse> {
-        if (!userRepository.existsById(user1Id) || !userRepository.existsById(user2Id)) {
-            throw IllegalArgumentException("One or both users do not exist")
-        }
-
-        val calls = callRepository.findCallsBetweenUsers(user1Id, user2Id)
+        return callRepository.findCallsBetweenUsers(user1Id, user2Id)
             .sortedByDescending { it.createdAt }
             .take(limit)
-        
-        return calls.map { it.toCallResponse() }
+            .map { it.toCallResponse() }
     }
 
-    /**
-     * Get ongoing calls (for admin/monitoring)
-     */
+    fun getCallHistoryList(userId: String, limit: Int = 50): List<CallHistoryItemResponse> {
+        return callRepository.findRecentCallsForUser(userId)
+            .sortedByDescending { it.createdAt }
+            .take(limit)
+            .map { call ->
+                val otherUserId = if (call.callerId == userId) call.calleeId else call.callerId
+                val isIncoming = call.calleeId == userId
+                val otherUser = userRepository.findByIdOrNull(otherUserId)?.toUserResponse()?.toPublicProfile()
+                
+                CallHistoryItemResponse(
+                    id = call.id ?: throw IllegalStateException("Call ID cannot be null"),
+                    conversationId = call.conversationId,
+                    callerId = call.callerId,
+                    calleeId = call.calleeId,
+                    callType = call.callType,
+                    status = call.status,
+                    startTime = call.startTime,
+                    endTime = call.endTime,
+                    duration = call.duration,
+                    createdAt = call.createdAt,
+                    updatedAt = call.updatedAt,
+                    otherUser = otherUser,
+                    isIncoming = isIncoming
+                )
+            }
+    }
+
     fun getOngoingCalls(): List<CallResponse> {
-        val calls = callRepository.findOngoingCalls()
-        return calls.map { it.toCallResponse() }
+        return callRepository.findOngoingCalls().map { it.toCallResponse() }
     }
 
     /**
-     * Update call with WebRTC signaling data
+     * Defers WebRTC Signaling entirely effectively to Redis Pub/Sub, NO DB writes.
      */
     fun updateCallWithSignaling(callId: String, offer: String? = null, answer: String? = null, iceCandidates: List<String>? = null): CallResponse {
         val call = callRepository.findByIdOrNull(callId)
             ?: throw IllegalArgumentException("Call not found")
+            
+        // Send to both since HTTP controller endpoint doesn't supply sender explicitly
+        val participants = listOf(call.callerId, call.calleeId)
 
-        val updatedCall = call.copy(
-            offer = offer ?: call.offer,
-            answer = answer ?: call.answer,
-            iceCandidates = iceCandidates ?: call.iceCandidates,
-            updatedAt = Instant.now()
-        )
+        participants.forEach { targetUserId ->
+            if (offer != null) {
+                callSignalingService.dispatchSignalToUser(targetUserId, WebRtcSignalPayload(callId, "sync", SignalType.OFFER, sdpData = offer))
+            }
+            if (answer != null) {
+                callSignalingService.dispatchSignalToUser(targetUserId, WebRtcSignalPayload(callId, "sync", SignalType.ANSWER, sdpData = answer))
+            }
+            iceCandidates?.forEach { ice ->
+                callSignalingService.dispatchSignalToUser(targetUserId, WebRtcSignalPayload(callId, "sync", SignalType.ICE_CANDIDATE, iceCandidate = ice))
+            }
+        }
 
-        val savedCall = callRepository.save(updatedCall)
-        return savedCall.toCallResponse()
+        // Return call response without persisting the payload
+        return call.toCallResponse()
     }
 
     /**
-     * Get call statistics for user
+     * Analytics Refactor: Uses DB-level aggregations
      */
     fun getCallStats(userId: String): Map<String, Any> {
-        if (!userRepository.existsById(userId)) {
-            throw IllegalArgumentException("User does not exist")
-        }
-
         return mapOf(
             "totalCalls" to callRepository.countCallsByStatusForUser(userId, CallStatus.ENDED),
             "missedCalls" to callRepository.countCallsByStatusForUser(userId, CallStatus.MISSED),
             "rejectedCalls" to callRepository.countCallsByStatusForUser(userId, CallStatus.REJECTED),
             "activeCalls" to callRepository.findActiveCallsForUser(userId).size,
-            "audioCalls" to callRepository.findByCallType(CallType.AUDIO).count { it.callerId == userId || it.calleeId == userId },
-            "videoCalls" to callRepository.findByCallType(CallType.VIDEO).count { it.callerId == userId || it.calleeId == userId }
+            "audioCalls" to callRepository.countByCallTypeAndUser(CallType.AUDIO, userId),
+            "videoCalls" to callRepository.countByCallTypeAndUser(CallType.VIDEO, userId)
         )
     }
 }
 
-/**
- * Extension function to convert Call to CallResponse
- */
 fun Call.toCallResponse(): CallResponse {
     return CallResponse(
         id = this.id ?: throw IllegalStateException("Call ID cannot be null"),

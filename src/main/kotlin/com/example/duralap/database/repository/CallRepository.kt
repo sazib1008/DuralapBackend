@@ -83,4 +83,10 @@ interface CallRepository : MongoRepository<Call, String> {
      */
     @Query("{ \$or: [ { 'callerId': ?0, 'calleeId': ?1 }, { 'callerId': ?1, 'calleeId': ?0 } ] }")
     fun findLastCallBetweenUsers(user1Id: String, user2Id: String): Optional<Call>
+
+    /**
+     * Count calls by call type for a user
+     */
+    @Query(value = "{ 'callType': ?0, \$or: [ { 'callerId': ?1 }, { 'calleeId': ?1 } ] }", count = true)
+    fun countByCallTypeAndUser(callType: CallType, userId: String): Long
 }

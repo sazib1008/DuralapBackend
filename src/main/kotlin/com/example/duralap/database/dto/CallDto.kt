@@ -73,3 +73,19 @@ data class CallStatusUpdate(
     val userId: String,
     val timestamp: java.time.Instant = java.time.Instant.now()
 )
+
+data class CallHistoryItemResponse(
+    val id: String,
+    val conversationId: String,
+    val callerId: String,
+    val calleeId: String,
+    val callType: CallType,
+    val status: CallStatus,
+    val startTime: java.time.Instant?,
+    val endTime: java.time.Instant?,
+    val duration: Long?,
+    val createdAt: java.time.Instant,
+    val updatedAt: java.time.Instant,
+    val otherUser: PublicUserProfile?,
+    val isIncoming: Boolean
+)

@@ -50,15 +50,15 @@ interface MessageRepository : MongoRepository<Message, String> {
     fun markMessagesAsRead(conversationId: String, userId: String): List<Message>
 
     /**
-     * Find messages by type
+     * Find messages by conversation and type
      */
-    fun findByMessageType(messageType: com.example.duralap.database.model.MessageType): List<Message>
+    fun findByConversationIdAndMessageType(conversationId: String, messageType: com.example.duralap.database.model.MessageType): List<Message>
 
     /**
-     * Find messages with media
+     * Find messages with media for a conversation
      */
-    @Query("{ 'mediaUrl': { \$exists: true, \$ne: null } }")
-    fun findMessagesWithMedia(): List<Message>
+    @Query("{ 'conversationId': ?0, 'mediaUrl': { \$exists: true, \$ne: null } }")
+    fun findByConversationIdAndMediaUrlIsNotNull(conversationId: String): List<Message>
 
     /**
      * Find messages created after a specific time
