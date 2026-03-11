@@ -49,7 +49,7 @@ class AuthController(
         )
         SecurityContextHolder.getContext().authentication = authentication
 
-        val roles = user.roles.map { "ROLE_\${it.name}" }.toSet()
+        val roles = user.roles.map { "ROLE_${it.name}" }.toSet()
         val accessToken = jwtTokenProvider.generateAccessToken(user.username, roles)
         val refreshToken = refreshTokenService.createRefreshToken(user)
 
@@ -76,7 +76,7 @@ class AuthController(
         val user = userRepository.findById(refreshToken.userId)
             .orElseThrow { IllegalArgumentException("User not found") }
 
-        val roles = user.roles.map { "ROLE_\${it.name}" }.toSet()
+        val roles = user.roles.map { "ROLE_${it.name}" }.toSet()
         val newAccessToken = jwtTokenProvider.generateAccessToken(user.username, roles)
         val newRefreshToken = refreshTokenService.createRefreshToken(user)
 
