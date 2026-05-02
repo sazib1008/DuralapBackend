@@ -12,8 +12,8 @@ interface ConversationRepository : MongoRepository<Conversation, String> {
     /**
      * Find conversation by participant IDs (exact match)
      */
-    @Query("{ 'participantIds': { \$all: ?0, \$size: ?0 } }")
-    fun findByParticipantIds(participantIds: Set<String>): Optional<Conversation>
+    @Query("{ 'participantIds': { \$all: ?0, \$size: ?1 } }")
+    fun findByParticipantIds(participantIds: Set<String>, size: Int): List<Conversation>
 
     /**
      * Find conversations containing specific participant
@@ -24,7 +24,7 @@ interface ConversationRepository : MongoRepository<Conversation, String> {
      * Find conversation between two specific users
      */
     @Query("{ 'participantIds': { \$all: [?0, ?1], \$size: 2 } }")
-    fun findByParticipantIdsContainingAndParticipantIdsContaining(user1: String, user2: String): Optional<Conversation>
+    fun findByParticipantIdsContainingAndParticipantIdsContaining(user1: String, user2: String): List<Conversation>
 
     /**
      * Find conversations for a user with last message and unread count
@@ -39,8 +39,8 @@ interface ConversationRepository : MongoRepository<Conversation, String> {
     /**
      * Check if conversation exists between participants
      */
-    @Query("{ 'participantIds': { \$all: ?0, \$size: ?0 } }")
-    fun existsByParticipantIds(participantIds: Set<String>): Boolean
+    @Query(value = "{ 'participantIds': { \$all: ?0, \$size: ?1 } }", exists = true)
+    fun existsByParticipantIds(participantIds: Set<String>, size: Int): Boolean
 
     /**
      * Find conversations updated after a specific time

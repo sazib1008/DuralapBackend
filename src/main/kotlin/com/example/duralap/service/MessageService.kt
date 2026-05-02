@@ -3,6 +3,7 @@ package com.example.duralap.service
 import com.example.duralap.database.dto.*
 import com.example.duralap.database.model.Message
 import com.example.duralap.database.model.MessageType
+import com.example.duralap.database.repository.ConversationRepository
 import com.example.duralap.database.repository.MessageRepository
 import com.example.duralap.events.MessageCreatedEvent
 import com.example.duralap.service.cache.ConversationValidationCache
@@ -16,28 +17,76 @@ import java.util.*
 
 @Service
 class MessageService(
-    private val kafkaTemplate: KafkaTemplate<String, MessageCreatedEvent>,
+    private val kafkaTemplate: KafkaTemplate<String, Any>,
     private val conversationValidator: ConversationValidationCache,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository,
+    private val conversationRequestService: ConversationRequestService,
+    private val rateLimitingService: RateLimitingService,
+    private val userCache: com.example.duralap.service.cache.UserCache
 ) {
 
     private val MESSAGE_EVENTS_TOPIC = "chat.events.message.created"
 
     /**
-     * CQRS Command Side: Emits an event rapidly to Kafka.
-     * Persistence and final delivery are handled asynchronously by consumers.
+     * CQRS Command Side: Persists to MongoDB immediately and then emits an event to Kafka.
+     * This ensures the message is saved for "later view" and available for real-time delivery.
+     * Also updates the parent Conversation metadata for optimized listing.
+     * 
+     * VALIDATION: Only allows sending messages if conversation is ACCEPTED
+     * RATE LIMITING: Prevents message spam
      */
     fun sendMessage(request: MessageCreateRequest): MessageResponse {
+        // 0. Rate limiting check
+        if (!rateLimitingService.canSendMessage(request.senderId)) {
+            throw IllegalArgumentException("Rate limit exceeded. Please wait before sending more messages.")
+        }
+        
         val transactionId = UUID.randomUUID().toString()
         val timestamp = Instant.now()
         
-        // Fast, highly available caching layer lookup (Redis)
+        // 0. Verify conversation exists and is ACCEPTED
+        val conversation = conversationRepository.findByIdOrNull(request.conversationId)
+            ?: throw IllegalArgumentException("Conversation not found")
+        
+        if (conversation.status != com.example.duralap.database.model.ConversationStatus.ACCEPTED) {
+            throw IllegalArgumentException("Cannot send message. Conversation request is still pending or was rejected.")
+        }
+        
+        // 1. Fast, highly available caching layer lookup (Redis)
         conversationValidator.verifyUserParticipantInConversation(
             userId = request.senderId, 
             conversationId = request.conversationId
         )
 
-        // Optimistic UI Model Construction
+        // 2. Persist to MongoDB immediately (Guarantee storage)
+        val message = Message(
+            id = transactionId,
+            conversationId = request.conversationId,
+            senderId = request.senderId,
+            content = request.content,
+            messageType = request.messageType,
+            mediaUrl = request.mediaUrl,
+            mediaType = request.mediaType,
+            fileName = request.fileName,
+            fileSize = request.fileSize,
+            isRead = false,
+            createdAt = timestamp,
+            updatedAt = timestamp
+        )
+        val savedMessage = messageRepository.save(message)
+
+        // 3. Update Conversation Metadata for "Later View" optimization
+        conversationRepository.findByIdOrNull(request.conversationId)?.let { conversation ->
+            conversation.lastMessageId = savedMessage.id
+            conversation.lastMessageSenderId = savedMessage.senderId
+            conversation.lastMessageContent = savedMessage.content
+            conversation.lastMessageType = savedMessage.messageType
+            conversation.lastMessageAt = timestamp
+            conversationRepository.save(conversation)
+        }
+
+        // 4. Fire to Kafka for real-time delivery
         val event = MessageCreatedEvent(
             id = transactionId,
             conversationId = request.conversationId,
@@ -50,27 +99,10 @@ class MessageService(
             fileSize = request.fileSize,
             timestamp = timestamp
         )
-
-        // Fire & Forget to Kafka with idempotency key (id) for partition distribution
-        // ConversationId acts as partition key ensuring strict ordering per conversation.
         kafkaTemplate.send(MESSAGE_EVENTS_TOPIC, request.conversationId, event)
 
-        // Return early. Client observes optimistic state; WebSockets guarantee final confirmation.
-        return MessageResponse(
-            id = transactionId,
-            conversationId = request.conversationId,
-            senderId = request.senderId,
-            content = request.content,
-            messageType = request.messageType,
-            mediaUrl = request.mediaUrl,
-            mediaType = request.mediaType,
-            fileName = request.fileName,
-            fileSize = request.fileSize,
-            isRead = false,
-            readAt = null,
-            createdAt = timestamp,
-            updatedAt = timestamp
-        )
+        // 5. Return the saved message response
+        return savedMessage.toMessageResponse()
     }
 
     /**

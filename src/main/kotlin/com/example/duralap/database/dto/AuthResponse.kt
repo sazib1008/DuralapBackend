@@ -5,5 +5,6 @@ data class AuthResponse(
     val refreshToken: String,
     val tokenType: String = "Bearer",
     val expiresIn: Long,
-    val user: UserResponse
+    val user: UserResponse,
+    val userConversations: UserConversationsDto? = null
 )

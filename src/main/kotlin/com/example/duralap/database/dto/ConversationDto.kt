@@ -12,6 +12,7 @@ data class ConversationCreateRequest(
 data class ConversationResponse(
     val id: String,
     val participantIds: Set<String>,
+    val status: com.example.duralap.database.model.ConversationStatus = com.example.duralap.database.model.ConversationStatus.ACCEPTED,
     val createdAt: java.time.Instant,
     val lastMessage: MessageResponse? = null,
     val unreadCount: Int = 0
@@ -23,4 +24,11 @@ data class GetOrCreateConversationRequest(
     
     @field:NotBlank(message = "User2 ID is required")
     val user2Id: String
+)
+
+data class StartConversationRequest(
+    @field:NotBlank(message = "Target user ID is required")
+    val targetUserId: String,
+    
+    val initialMessage: String? = null
 )

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.index.Index
 import org.springframework.beans.factory.annotation.Value
+import java.time.Duration
 
 @Configuration
 class MongoIndexConfig(private val mongoTemplate: MongoTemplate) {
@@ -17,15 +18,16 @@ class MongoIndexConfig(private val mongoTemplate: MongoTemplate) {
 
     private val logger = LoggerFactory.getLogger(MongoIndexConfig::class.java)
 
-    @EventListener(ApplicationReadyEvent::class)
-    fun ensureIndexes() {
+    @EventListener(ApplicationReadyEvent::class) fun ensureIndexes() {
         logger.info("Initializing MongoDB Compound Indexes for high-throughput scaling...")
-        logger.info("Current injected MongoDB URI is: \$mongoUri")
-
+        logger.info("Current injected MongoDB URI is: $mongoUri")
+    
         ensureMessageIndexes()
         ensureCallIndexes()
         ensureUserIndexes()
-        
+        ensureConversationIndexes()
+        ensureConversationRequestIndexes()
+            
         logger.info("MongoDB Indexes synchronized successfully.")
     }
 
@@ -76,6 +78,60 @@ class MongoIndexConfig(private val mongoTemplate: MongoTemplate) {
         // db.users.createIndex({ status: 1, isInCall: 1 })
         mongoTemplate.indexOps(userCollection).ensureIndex(
             Index().on("status", Sort.Direction.ASC).on("isInCall", Sort.Direction.ASC)
+        )
+        
+        // Optimize user search (username and email lookups)
+        mongoTemplate.indexOps(userCollection).ensureIndex(
+            Index().on("username", Sort.Direction.ASC).unique()
+        )
+        
+        mongoTemplate.indexOps(userCollection).ensureIndex(
+            Index().on("email", Sort.Direction.ASC).unique()
+        )
+    }
+    
+    private fun ensureConversationIndexes() {
+        val conversationCollection = "conversations"
+        
+        // Optimize finding conversations by participant
+        mongoTemplate.indexOps(conversationCollection).ensureIndex(
+            Index().on("participantIds", Sort.Direction.ASC)
+        )
+        
+        // Optimize sorting conversations by last message time
+        mongoTemplate.indexOps(conversationCollection).ensureIndex(
+            Index().on("participantIds", Sort.Direction.ASC)
+                   .on("lastMessageAt", Sort.Direction.DESC)
+        )
+        
+        // Optimize filtering by status
+        mongoTemplate.indexOps(conversationCollection).ensureIndex(
+            Index().on("participantIds", Sort.Direction.ASC)
+                   .on("status", Sort.Direction.ASC)
+                   .on("lastMessageAt", Sort.Direction.DESC)
+        )
+    }
+    
+    private fun ensureConversationRequestIndexes() {
+        val requestCollection = "conversation_requests"
+        
+        // Optimize finding pending requests for a user
+        mongoTemplate.indexOps(requestCollection).ensureIndex(
+            Index().on("recipientId", Sort.Direction.ASC)
+                   .on("status", Sort.Direction.ASC)
+                   .on("requestedAt", Sort.Direction.DESC)
+        )
+        
+        // Optimize finding requests between two users
+        mongoTemplate.indexOps(requestCollection).ensureIndex(
+            Index().on("senderId", Sort.Direction.ASC)
+                   .on("recipientId", Sort.Direction.ASC)
+                   .on("status", Sort.Direction.ASC)
+        )
+        
+        // Optimize lookup by conversation ID
+        mongoTemplate.indexOps(requestCollection).ensureIndex(
+            Index().on("conversationId", Sort.Direction.ASC).unique()
         )
     }
 }

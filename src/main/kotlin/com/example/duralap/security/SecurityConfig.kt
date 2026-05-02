@@ -18,7 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val rateLimitingFilter: com.example.duralap.filter.RateLimitingFilter
 ) {
 
     /**
@@ -39,11 +40,15 @@ class SecurityConfig(
                     .requestMatchers("/actuator/**").permitAll() // Actuator endpoints
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/moderator/**").hasAnyRole("MODERATOR", "ADMIN")
+                    .requestMatchers("/api/conversation-requests/**").authenticated() // Conversation requests
                     .anyRequest().authenticated()
             }
 
         // Add JWT authentication filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        
+        // Add rate limiting filter after JWT filter
+        http.addFilterAfter(rateLimitingFilter, JwtAuthenticationFilter::class.java)
 
         return http.build()
     }

@@ -16,11 +16,7 @@ class UserController(
     private val userService: UserService
 ) {
 
-    @PostMapping
-    fun createUser(@Valid @RequestBody request: UserCreateRequest): ResponseEntity<UserResponse> {
-        val user = userService.createUser(request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(user)
-    }
+
 
     @GetMapping("/{id}")
     fun getUserById(@PathVariable id: String): ResponseEntity<UserResponse> {
@@ -58,35 +54,8 @@ class UserController(
         return ResponseEntity.noContent().build()
     }
 
-    @GetMapping
-    fun getAllUsers(): ResponseEntity<List<UserResponse>> {
-        val users = userService.getAllUsers()
-        return ResponseEntity.ok(users)
-    }
 
-    @GetMapping("/search")
-    fun searchUsers(@RequestParam searchTerm: String): ResponseEntity<List<UserResponse>> {
-        val users = userService.searchUsers(searchTerm)
-        return ResponseEntity.ok(users)
-    }
 
-    @GetMapping("/online")
-    fun getOnlineUsers(): ResponseEntity<List<UserResponse>> {
-        val users = userService.getOnlineUsers()
-        return ResponseEntity.ok(users)
-    }
-
-    @GetMapping("/available")
-    fun getAvailableOnlineUsers(): ResponseEntity<List<UserResponse>> {
-        val users = userService.getAvailableOnlineUsers()
-        return ResponseEntity.ok(users)
-    }
-
-    @GetMapping("/in-call")
-    fun getUsersInCall(): ResponseEntity<List<UserResponse>> {
-        val users = userService.getUsersInCall()
-        return ResponseEntity.ok(users)
-    }
 
     @PatchMapping("/{id}/status")
     fun updateUserStatus(
@@ -97,21 +66,17 @@ class UserController(
         return ResponseEntity.ok(user)
     }
 
-    @PatchMapping("/{id}/call-status")
-    fun updateCallStatus(
-        @PathVariable id: String,
-        @RequestParam isInCall: Boolean,
-        @RequestParam(required = false) callId: String?
-    ): ResponseEntity<UserResponse> {
-        val user = userService.updateCallStatus(id, isInCall, callId)
-        return ResponseEntity.ok(user)
-    }
+//    @PatchMapping("/{id}/call-status")
+//    fun updateCallStatus(
+//        @PathVariable id: String,
+//        @RequestParam isInCall: Boolean,
+//        @RequestParam(required = false) callId: String?
+//    ): ResponseEntity<UserResponse> {
+//        val user = userService.updateCallStatus(id, isInCall, callId)
+//        return ResponseEntity.ok(user)
+//    }
 
-    @PatchMapping("/{id}/verify")
-    fun verifyUserEmail(@PathVariable id: String): ResponseEntity<UserResponse> {
-        val user = userService.verifyUserEmail(id)
-        return ResponseEntity.ok(user)
-    }
+
 
     @GetMapping("/check-username/{username}")
     fun checkUsername(@PathVariable username: String): ResponseEntity<Map<String, Boolean>> {
@@ -125,9 +90,5 @@ class UserController(
         return ResponseEntity.ok(mapOf("exists" to exists))
     }
 
-    @GetMapping("/stats")
-    fun getUserStats(): ResponseEntity<Map<String, Any>> {
-        val stats = userService.getUserStats()
-        return ResponseEntity.ok(stats)
-    }
+
 }

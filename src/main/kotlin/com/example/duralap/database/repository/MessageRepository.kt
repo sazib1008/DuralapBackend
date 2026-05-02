@@ -34,7 +34,7 @@ interface MessageRepository : MongoRepository<Message, String> {
     /**
      * Count unread messages for a user in a conversation
      */
-    @Query("{ 'conversationId': ?0, 'senderId': { \$ne: ?1 }, 'isRead': false }")
+    @Query(value = "{ 'conversationId': ?0, 'senderId': { \$ne: ?1 }, 'isRead': false }", count = true)
     fun countUnreadMessages(conversationId: String, userId: String): Long
 
     /**
@@ -70,4 +70,9 @@ interface MessageRepository : MongoRepository<Message, String> {
      */
     @Query("{ 'conversationId': ?0, 'createdAt': { \$gt: ?1 } }")
     fun findByConversationIdAndCreatedAtAfter(conversationId: String, createdAt: java.time.Instant): List<Message>
+
+    /**
+     * Delete all messages by conversation ID
+     */
+    fun deleteByConversationId(conversationId: String)
 }

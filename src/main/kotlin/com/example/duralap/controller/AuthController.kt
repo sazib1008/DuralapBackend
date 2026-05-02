@@ -3,6 +3,7 @@ package com.example.duralap.controller
 import com.example.duralap.database.dto.*
 import com.example.duralap.database.repository.UserRepository
 import com.example.duralap.security.JwtTokenProvider
+import com.example.duralap.service.ConversationService
 import com.example.duralap.service.RefreshTokenService
 import com.example.duralap.service.UserService
 import jakarta.validation.Valid
@@ -24,7 +25,8 @@ class AuthController(
     private val refreshTokenService: RefreshTokenService,
     private val userService: UserService,
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val conversationService: ConversationService
 ) {
 
     @PostMapping("/register")
@@ -56,11 +58,15 @@ class AuthController(
         val updatedUser = user.copy(lastSeen = Instant.now())
         userRepository.save(updatedUser)
 
+        val conversationIds = conversationService.getUserConversationIds(updatedUser.id!!)
+        val userConversationsDto = UserConversationsDto(updatedUser.id, conversationIds)
+
         val authResponse = AuthResponse(
             accessToken = accessToken,
             refreshToken = refreshToken.token,
             expiresIn = 86400, // 24 hours in seconds
-            user = updatedUser.toUserResponse()
+            user = updatedUser.toUserResponse(),
+            userConversations = userConversationsDto
         )
 
         return ResponseEntity.ok(authResponse)
@@ -85,11 +91,15 @@ class AuthController(
         val updatedUser = user.copy(lastSeen = Instant.now())
         userRepository.save(updatedUser)
 
+        val conversationIds = conversationService.getUserConversationIds(updatedUser.id!!)
+        val userConversationsDto = UserConversationsDto(updatedUser.id, conversationIds)
+
         val authResponse = AuthResponse(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken.token,
             expiresIn = 86400,
-            user = updatedUser.toUserResponse()
+            user = updatedUser.toUserResponse(),
+            userConversations = userConversationsDto
         )
 
         return ResponseEntity.ok(authResponse)
