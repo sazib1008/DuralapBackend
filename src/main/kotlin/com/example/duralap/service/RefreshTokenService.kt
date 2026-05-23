@@ -37,7 +37,7 @@ class RefreshTokenService(
     fun verifyExpiration(refreshToken: RefreshToken): RefreshToken {
         if (refreshToken.expiryDate.isBefore(Instant.now())) {
             refreshTokenRepository.delete(refreshToken)
-            throw RuntimeException("Refresh token expired")
+            throw com.example.duralap.exception.TokenRefreshException("Refresh token expired")
         }
         return refreshToken
     }

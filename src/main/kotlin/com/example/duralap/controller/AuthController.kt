@@ -75,7 +75,7 @@ class AuthController(
     @PostMapping("/refresh")
     fun refreshToken(@Valid @RequestBody request: TokenRefreshRequest): ResponseEntity<AuthResponse> {
         val refreshToken = refreshTokenService.findByToken(request.refreshToken)
-            .orElseThrow { IllegalArgumentException("Refresh token not found") }
+            .orElseThrow { com.example.duralap.exception.TokenRefreshException("Refresh token not found") }
 
         refreshTokenService.verifyExpiration(refreshToken)
 

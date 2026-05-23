@@ -35,17 +35,22 @@ class RateLimitingFilter(
         val userId = getUserIdentity(request)
         
         // Apply rate limiting based on endpoint
+        var retryAfterSeconds = 60L
         val isAllowed = when {
             requestPath.contains("/api/messages") && request.method == "POST" -> {
+                retryAfterSeconds = 60L
                 rateLimitingService.canSendMessage(userId)
             }
             requestPath.contains("/api/conversations/start-with") && request.method == "POST" -> {
+                retryAfterSeconds = 3600L
                 rateLimitingService.canCreateConversationRequest(userId)
             }
             requestPath.contains("/api/users/search") || requestPath.contains("/api/users/check") -> {
+                retryAfterSeconds = 60L
                 rateLimitingService.canSearchUsers(userId)
             }
             requestPath.contains("/api/auth/login") && request.method == "POST" -> {
+                retryAfterSeconds = 900L
                 rateLimitingService.canAttemptLogin(getClientIp(request))
             }
             else -> true
@@ -53,6 +58,7 @@ class RateLimitingFilter(
 
         if (!isAllowed) {
             response.status = 429 // HTTP 429 Too Many Requests
+            response.addHeader("Retry-After", retryAfterSeconds.toString())
             response.contentType = "application/json"
             response.writer.write("""{
                 "error": "Rate limit exceeded",

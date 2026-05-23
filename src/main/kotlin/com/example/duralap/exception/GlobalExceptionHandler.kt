@@ -78,6 +78,27 @@ class GlobalExceptionHandler {
     }
 
     /**
+     * Handle refresh token validation failures (expired, not found, blacklisted).
+     */
+    @ExceptionHandler(TokenRefreshException::class)
+    fun handleTokenRefreshException(
+        ex: TokenRefreshException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val path = (request as? ServletWebRequest)?.request?.requestURI ?: ""
+
+        logger.warn("Token Refresh Exception at \$path: \${ex.message}")
+
+        val errorResponse = ErrorResponse(
+            status = HttpStatus.FORBIDDEN.value(),
+            error = HttpStatus.FORBIDDEN.reasonPhrase,
+            message = ex.message ?: "Invalid refresh token",
+            path = path
+        )
+        return ResponseEntity(errorResponse, HttpStatus.FORBIDDEN)
+    }
+
+    /**
      * Catch-All for unhandled Internal Server Errors (SQL failures, Kafka timeouts).
      * Prevents dumping full StackTraces onto the API response.
      */
