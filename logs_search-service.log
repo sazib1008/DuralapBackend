@@ -1,0 +1,91 @@
+Starting a Gradle Daemon, 1 busy and 25 stopped Daemons could not be reused, use --status for details
+> Task :search-service:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-dto:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-dto:compileKotlin UP-TO-DATE
+> Task :common:common-dto:compileJava NO-SOURCE
+> Task :common:common-events:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-events:compileKotlin UP-TO-DATE
+> Task :common:common-events:compileJava NO-SOURCE
+> Task :common:common-kafka:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-kafka:compileKotlin UP-TO-DATE
+> Task :common:common-kafka:compileJava NO-SOURCE
+> Task :common:common-mongo:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-mongo:compileKotlin UP-TO-DATE
+> Task :common:common-mongo:compileJava NO-SOURCE
+> Task :common:common-redis:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-redis:compileKotlin UP-TO-DATE
+> Task :common:common-redis:compileJava NO-SOURCE
+> Task :common:common-security:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-utils:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:common-utils:compileKotlin UP-TO-DATE
+> Task :common:common-utils:compileJava NO-SOURCE
+> Task :common:common-security:compileKotlin UP-TO-DATE
+> Task :common:common-security:compileJava NO-SOURCE
+> Task :search-service:processResources UP-TO-DATE
+> Task :common:common-dto:processResources NO-SOURCE
+> Task :common:common-dto:classes UP-TO-DATE
+> Task :common:common-dto:jar UP-TO-DATE
+> Task :common:common-events:processResources NO-SOURCE
+> Task :common:common-events:classes UP-TO-DATE
+> Task :search-service:compileKotlin
+> Task :common:common-events:jar UP-TO-DATE
+> Task :search-service:compileJava NO-SOURCE
+> Task :search-service:classes UP-TO-DATE
+> Task :search-service:resolveMainClassName UP-TO-DATE
+> Task :common:common-kafka:processResources NO-SOURCE
+> Task :common:common-kafka:classes UP-TO-DATE
+> Task :common:common-kafka:jar UP-TO-DATE
+> Task :common:common-mongo:processResources NO-SOURCE
+> Task :common:common-mongo:classes UP-TO-DATE
+> Task :common:common-mongo:jar UP-TO-DATE
+> Task :common:common-redis:processResources NO-SOURCE
+> Task :common:common-redis:classes UP-TO-DATE
+> Task :common:common-redis:jar UP-TO-DATE
+> Task :common:common-security:processResources NO-SOURCE
+> Task :common:common-security:classes UP-TO-DATE
+> Task :common:common-security:jar UP-TO-DATE
+> Task :common:common-utils:processResources NO-SOURCE
+> Task :common:common-utils:classes UP-TO-DATE
+> Task :common:common-utils:jar UP-TO-DATE
+
+> Task :search-service:bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.1)
+
+2026-07-24T02:50:46.576+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.d.search.SearchServiceApplicationKt  : Starting SearchServiceApplicationKt using Java 21.0.11 with PID 2144 (/Users/sazibhossainsazib1008/projects/duralap/DuralapBackend/search-service/build/classes/kotlin/main started by sazibhossainsazib1008 in /Users/sazibhossainsazib1008/projects/duralap/DuralapBackend/search-service)
+2026-07-24T02:50:46.578+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.d.search.SearchServiceApplicationKt  : No active profile set, falling back to 1 default profile: "default"
+2026-07-24T02:50:46.967+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-07-24T02:50:46.967+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-07-24T02:50:47.029+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 58 ms. Found 10 MongoDB repository interfaces.
+2026-07-24T02:50:47.284+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-07-24T02:50:47.285+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-07-24T02:50:47.294+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-07-24T02:50:48.636+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8089 (http)
+2026-07-24T02:50:48.646+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-24T02:50:48.646+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
+2026-07-24T02:50:48.681+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-07-24T02:50:48.681+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2070 ms
+2026-07-24T02:50:48.779+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] com.example.duralap.config.MongoConfig   : Initializing explicit MongoClient with URI: mongodb+srv://sazib1008:VIlessaUR74ymfKG@cluster0.lsfwn33.mongodb.net/?appName=Cluster0
+2026-07-24T02:50:48.872+06:00  INFO [search-service,,] 2144 --- [search-service] [n33.mongodb.net] [                                                 ] org.mongodb.driver.cluster               : Adding discovered server ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017 to client view of cluster
+2026-07-24T02:50:48.889+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] org.mongodb.driver.client                : MongoClient with metadata {"application": {"name": "Cluster0"}, "driver": {"name": "mongo-java-driver|sync", "version": "5.2.1"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "26.3.1"}, "platform": "Java/Eclipse Adoptium/21.0.11+10-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=MongoCredential{mechanism=null, userName='sazib1008', source='admin', password=<hidden>, mechanismProperties=<hidden>}, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@7d12429, com.mongodb.Jep395RecordCodecProvider@14656be5, com.mongodb.KotlinCodecProvider@20be890d]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[127.0.0.1:27017], srvHost=cluster0.lsfwn33.mongodb.net, srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=REPLICA_SET, requiredReplicaSetName='atlas-vherdp-shard-0', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}, applicationName='Cluster0', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-07-24T02:50:48.894+06:00  INFO [search-service,,] 2144 --- [search-service] [n33.mongodb.net] [                                                 ] org.mongodb.driver.cluster               : Adding discovered server ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017 to client view of cluster
+2026-07-24T02:50:48.895+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] com.example.duralap.config.MongoConfig   : Initializing SimpleMongoClientDatabaseFactory with database name: duralap
+2026-07-24T02:50:48.896+06:00  INFO [search-service,,] 2144 --- [search-service] [n33.mongodb.net] [                                                 ] org.mongodb.driver.cluster               : Adding discovered server ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017 to client view of cluster
+2026-07-24T02:50:49.227+06:00  INFO [search-service,,] 2144 --- [search-service] [ngodb.net:27017] [                                                 ] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=194990542, minRoundTripTimeNanos=0, setName='atlas-vherdp-shard-0', canonicalAddress=ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017, hosts=[ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017], passives=[], arbiters=[], primary='ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az1'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=335, topologyVersion=TopologyVersion{processId=6a5fc20a3b3b1540938607c9, counter=4}, lastWriteDate=Fri Jul 24 02:50:49 BDT 2026, lastUpdateTimeNanos=478224976041}
+2026-07-24T02:50:49.227+06:00  INFO [search-service,,] 2144 --- [search-service] [ngodb.net:27017] [                                                 ] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=196381375, minRoundTripTimeNanos=0, setName='atlas-vherdp-shard-0', canonicalAddress=ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017, hosts=[ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017], passives=[], arbiters=[], primary='ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az2'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=335, topologyVersion=TopologyVersion{processId=6a5fc2bbd782fd57472cd9e6, counter=3}, lastWriteDate=Fri Jul 24 02:50:49 BDT 2026, lastUpdateTimeNanos=478224963958}
+2026-07-24T02:50:49.228+06:00  INFO [search-service,,] 2144 --- [search-service] [ngodb.net:27017] [                                                 ] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017, type=REPLICA_SET_PRIMARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=196035042, minRoundTripTimeNanos=0, setName='atlas-vherdp-shard-0', canonicalAddress=ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017, hosts=[ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-02.lsfwn33.mongodb.net:27017, ac-eabsbyh-shard-00-00.lsfwn33.mongodb.net:27017], passives=[], arbiters=[], primary='ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az3'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=7fffffff000000000000013f, setVersion=335, topologyVersion=TopologyVersion{processId=6a5fc263ffeed151cd2c4d01, counter=6}, lastWriteDate=Fri Jul 24 02:50:49 BDT 2026, lastUpdateTimeNanos=478226687666}
+2026-07-24T02:50:49.229+06:00  INFO [search-service,,] 2144 --- [search-service] [ngodb.net:27017] [                                                 ] org.mongodb.driver.cluster               : Discovered replica set primary ac-eabsbyh-shard-00-01.lsfwn33.mongodb.net:27017 with max election id 7fffffff000000000000013f and max set version 335
+2026-07-24T02:50:49.475+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-07-24T02:50:49.811+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-07-24T02:50:50.776+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8089 (http) with context path '/'
+2026-07-24T02:50:50.789+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.d.search.SearchServiceApplicationKt  : Started SearchServiceApplicationKt in 4.389 seconds (process running for 4.549)
+2026-07-24T02:50:50.860+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.duralap.config.MongoIndexConfig      : Initializing MongoDB Compound Indexes for high-throughput scaling...
+2026-07-24T02:50:50.860+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.duralap.config.MongoIndexConfig      : Current injected MongoDB URI is: mongodb+srv://sazib1008:VIlessaUR74ymfKG@cluster0.lsfwn33.mongodb.net/?appName=Cluster0
+2026-07-24T02:50:52.055+06:00  INFO [search-service,,] 2144 --- [search-service] [           main] [                                                 ] c.e.duralap.config.MongoIndexConfig      : MongoDB Indexes synchronized successfully.

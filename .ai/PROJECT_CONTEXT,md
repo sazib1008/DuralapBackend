@@ -1,0 +1,650 @@
+# PROJECT_CONTEXT.md
+
+# Duralap
+
+> Enterprise-Grade Real-Time Messaging Platform
+
+Version: 1.0
+
+Status: Active Development
+
+---
+
+# Project Vision
+
+Duralap is an enterprise-grade real-time messaging platform designed as a production-ready software engineering project.
+
+The goal is not to clone WhatsApp, Telegram, Messenger, or Discord.
+
+Instead, Duralap combines the best features from these platforms while following modern enterprise software engineering practices.
+
+This project is built for:
+
+- Learning
+- Portfolio
+- Final Year Project
+- Production-ready Reference Application
+
+---
+
+# Target Platforms
+
+The backend must be platform-independent.
+
+Clients include:
+
+- Android (Native Kotlin + Jetpack Compose)
+- Web
+- iOS
+- Desktop
+- Tablet
+
+Backend APIs must never depend on a specific client implementation.
+
+---
+
+# Project Goals
+
+The project must be:
+
+- Production Ready
+- Secure
+- Scalable
+- Maintainable
+- Testable
+- Observable
+- Cloud Deployable
+- Microservice Ready
+
+---
+
+# Tech Stack
+
+## Language
+
+Kotlin
+
+Java 21
+
+---
+
+## Framework
+
+Spring Boot 3
+
+---
+
+## Database
+
+MongoDB
+
+Role:
+
+Primary database
+
+Single source of truth
+
+---
+
+## Cache
+
+Redis
+
+Responsibilities:
+
+- Online Status
+- Presence
+- Typing Indicator
+- Session Cache
+- User Cache
+- Conversation Cache
+- Notification Count
+- Rate Limiting
+
+Redis never stores permanent business data.
+
+---
+
+## Event Streaming
+
+Apache Kafka
+
+Responsibilities:
+
+- Domain Events
+- Notification Events
+- Analytics
+- Audit
+- Search
+- Future Microservices
+
+Every event must be:
+
+- Versioned
+- Idempotent
+- Traceable
+- Ordered
+
+---
+
+## Media Storage
+
+Supabase Storage
+
+Responsibilities:
+
+- Images
+- Videos
+- Voice Notes
+- Audio
+- Documents
+
+MongoDB stores only metadata.
+
+---
+
+## Authentication
+
+Supports:
+
+- Email + Password
+- Email OTP Verification
+- Google OAuth2
+
+Future:
+
+- Apple Login
+- Passkeys
+- Two-Factor Authentication
+
+---
+
+## Communication
+
+REST API
+
+Spring WebSocket
+
+STOMP
+
+---
+
+## Deployment
+
+Docker
+
+Docker Compose
+
+Ubuntu
+
+Caddy Reverse Proxy
+
+Future:
+
+Kubernetes
+
+---
+
+# Architecture
+
+Architecture Style:
+
+Feature-Based Modular Monolith
+
+Future:
+
+Microservices
+
+---
+
+# Modules
+
+Identity
+
+User
+
+Conversation
+
+Message
+
+Group
+
+Media
+
+Notification
+
+Search
+
+Infrastructure
+
+Each module owns its own:
+
+- Controller
+- DTO
+- Mapper
+- Entity
+- Repository
+- Service
+- UseCase
+- Events
+- Config
+- Exception
+
+---
+
+# Module Communication
+
+Allowed
+
+Controller
+
+↓
+
+UseCase
+
+↓
+
+Repository
+
+Forbidden
+
+Controller
+
+↓
+
+Repository directly
+
+Forbidden
+
+Module A Repository
+
+↓
+
+Module B Repository
+
+Communication between modules happens through:
+
+- Facades
+- Domain Events
+
+---
+
+# Engineering Principles
+
+Always follow:
+
+- Clean Architecture
+- SOLID
+- DRY
+- KISS
+- Repository Pattern
+- UseCase Pattern
+- DTO Pattern
+- Outbox Pattern
+- Event-Driven Architecture
+- API First Design
+
+---
+
+# Messaging Flow
+
+Client
+
+↓
+
+REST API
+
+↓
+
+Validation
+
+↓
+
+Authorization
+
+↓
+
+Business Rules
+
+↓
+
+MongoDB Transaction
+
+↓
+
+Outbox Event
+
+↓
+
+Kafka
+
+↓
+
+Notification
+
+↓
+
+WebSocket Broadcast
+
+Never broadcast a message before MongoDB transaction succeeds.
+
+---
+
+# Database Philosophy
+
+MongoDB is the only permanent database.
+
+Redis is cache only.
+
+Kafka is event transport only.
+
+Supabase stores media only.
+
+Never duplicate business truth.
+
+---
+
+# Authentication Rules
+
+Email registration
+
+↓
+
+Email OTP Verification
+
+↓
+
+JWT Authentication
+
+↓
+
+Refresh Token
+
+↓
+
+Remember Login
+
+Support:
+
+- Device Management
+- Logout
+- Logout All Devices
+- Password Reset
+
+---
+
+# User Discovery
+
+Supported:
+
+- Username (Always Discoverable)
+- Email (User Controlled)
+
+Default:
+
+Allow Discover by Email = ON
+
+User may disable this setting.
+
+Future:
+
+- QR Code
+- Share Link
+
+---
+
+# Conversation Types
+
+Supported:
+
+- Private
+- Group
+
+Future:
+
+- Channel
+- Community
+
+---
+
+# Supported Messages
+
+- Text
+- Emoji
+- Unicode
+- Multi-line
+- Image
+- Video
+- Voice Note
+- Audio
+- GIF
+- Sticker
+- Document
+- Contact
+- Location
+
+Future:
+
+- Poll
+- Event
+- Live Location
+
+---
+
+# Message Features
+
+Supported:
+
+- Reply
+- Edit
+- Forward
+- Delete For Me
+- Delete For Everyone
+- Reactions
+- Delivery Status
+- Read Receipt
+- Typing Indicator
+- Unread Count
+
+Edit Window:
+
+15 Minutes
+
+---
+
+# Group Features
+
+- Create
+- Invite
+- Remove
+- Roles
+- Permissions
+- Ownership Transfer
+- Invite Links
+
+---
+
+# REST API Rules
+
+Version:
+
+/api/v1/
+
+Every endpoint must:
+
+- Validate input
+- Authorize user
+- Return DTO
+- Return consistent response
+- Use OpenAPI
+- Produce audit logs if required
+
+Never expose entities.
+
+---
+
+# WebSocket Rules
+
+Realtime uses STOMP.
+
+Every event must:
+
+- Be versioned
+- Be ordered
+- Be acknowledged
+- Support replay
+- Support reconnect
+- Support session recovery
+
+---
+
+# Redis Strategy
+
+Redis stores:
+
+- Presence
+- Typing
+- Sessions
+- Cache
+- Rate Limits
+
+Never store messages.
+
+Never store permanent business data.
+
+---
+
+# Kafka Strategy
+
+Kafka publishes:
+
+- User Events
+- Conversation Events
+- Message Events
+- Group Events
+- Notification Events
+- Audit Events
+
+Future:
+
+- Search Indexing
+- Analytics
+- ML Pipelines
+
+---
+
+# Security
+
+Always implement:
+
+- HTTPS
+- JWT Authentication
+- Refresh Token Rotation
+- Argon2 Password Hashing
+- Authorization
+- Ownership Validation
+- Bean Validation
+- Rate Limiting
+- Audit Logs
+
+Never:
+
+- Hardcode secrets
+- Store passwords
+- Expose internal implementation
+- Skip authorization
+
+---
+
+# Monitoring
+
+Every feature must include:
+
+- Structured Logging
+- Correlation ID
+- Metrics
+- Health Checks
+- Exception Handling
+- Audit Logging
+
+Use:
+
+- Prometheus
+- Grafana
+- Loki
+- OpenTelemetry
+
+---
+
+# Testing
+
+Every feature requires:
+
+- Unit Test
+- Integration Test
+- Repository Test
+- Controller Test
+- Kafka Test (if applicable)
+- WebSocket Test (if applicable)
+
+Coverage Target:
+
+85%+
+
+---
+
+# AI Development Rules
+
+Before generating code:
+
+1. Read every file inside `.ai/`
+
+2. Follow the architecture.
+
+3. Never violate module boundaries.
+
+4. Never write business logic inside controllers.
+
+5. Never expose entities directly.
+
+6. Generate production-quality code only.
+
+7. Generate tests.
+
+8. Generate documentation.
+
+9. Generate validation.
+
+10. Generate logging.
+
+11. Generate OpenAPI annotations.
+
+12. Generate exception handling.
+
+13. If multiple solutions exist, explain the trade-offs and recommend the best production-ready option.
+
+14. If a request conflicts with the architecture, explain the conflict before writing code.
+
+Architecture always has higher priority than convenience.
+
+---
+
+# Project Philosophy
+
+> Build software like it will serve millions of users.
+
+Every feature is complete only when it includes:
+
+- Correct Architecture
+- Security
+- Validation
+- Tests
+- Documentation
+- Logging
+- Monitoring
+- Error Handling
+- Performance Considerations
+
+Code quality is more important than development speed.
+
+Maintain enterprise-level engineering standards throughout the project.
