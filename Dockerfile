@@ -1,24 +1,60 @@
-FROM eclipse-temurin:21-jre-jammy
+# Multi-stage Dockerfile for Duralap Spring Boot Microservices
+# Supports ARM64 (Apple Silicon) and AMD64 (Intel/Windows) via eclipse-temurin multi-arch images
 
-# Create a non-root user to run the application for security purposes
-RUN addgroup --system spring && adduser --system --ingroup spring spring
-USER spring:spring
-
-# Set the working directory inside the container
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 
-# Argument specifying the JAR file built by Maven
-ARG JAR_FILE=target/*.jar
+RUN apk add --no-cache bash
 
-# Copy the built fat-jar into the container
-COPY ${JAR_FILE} app.jar
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts settings.gradle.kts ./
 
-# Expose the port the Spring Boot application runs on
+COPY common common
+COPY gateway-service gateway-service
+COPY auth-service auth-service
+COPY user-service user-service
+COPY chat-service chat-service
+COPY message-service message-service
+COPY media-service media-service
+COPY presence-service presence-service
+COPY notification-service notification-service
+COPY analytics-service analytics-service
+COPY search-service search-service
+
+ENV GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx768m -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError"
+RUN chmod +x gradlew && ./gradlew \
+    :gateway-service:bootJar \
+    :auth-service:bootJar \
+    :user-service:bootJar \
+    :chat-service:bootJar \
+    :message-service:bootJar \
+    :media-service:bootJar \
+    :presence-service:bootJar \
+    :notification-service:bootJar \
+    :analytics-service:bootJar \
+    :search-service:bootJar \
+    -x test --no-daemon
+
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN apk add --no-cache curl \
+    && addgroup -S spring \
+    && adduser -S spring -G spring
+
+USER spring:spring
+
+ARG SERVICE_NAME=gateway-service
+COPY --from=builder /app/${SERVICE_NAME}/build/libs/*.jar app.jar
+
 EXPOSE 8080
 
-# Environment variables for overriding properties at runtime
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
-ENV SPRING_PROFILES_ACTIVE="prod"
+ENV SPRING_PROFILES_ACTIVE="docker"
 
-# Execute the application
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app/app.jar"]
+HEALTHCHECK NONE
+
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]

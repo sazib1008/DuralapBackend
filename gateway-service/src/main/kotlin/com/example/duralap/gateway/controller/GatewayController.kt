@@ -27,6 +27,19 @@ class GatewayController {
         "search" to 8089
     )
 
+    private val serviceHosts = mapOf(
+        "auth" to "auth-service",
+        "users" to "user-service",
+        "conversations" to "chat-service",
+        "conversation-requests" to "chat-service",
+        "messages" to "message-service",
+        "media" to "media-service",
+        "calls" to "presence-service",
+        "notifications" to "notification-service",
+        "analytics" to "analytics-service",
+        "search" to "search-service"
+    )
+
     @RequestMapping(value = ["/api/{serviceName}/**", "/api/{serviceName}"])
     fun proxyRequest(
         @PathVariable serviceName: String,
@@ -36,10 +49,17 @@ class GatewayController {
         val port = servicePorts[serviceName] 
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Service not found".toByteArray())
         
+        val defaultHost = System.getenv("SERVICE_HOST") ?: "localhost"
+        val host = if (System.getenv("SPRING_PROFILES_ACTIVE") == "docker") {
+            serviceHosts[serviceName] ?: defaultHost
+        } else {
+            defaultHost
+        }
+
         // Build downstream URI
         val requestUri = request.requestURI
         val queryString = request.queryString
-        val targetUrl = "http://localhost:$port$requestUri" + (if (queryString != null) "?$queryString" else "")
+        val targetUrl = "http://$host:$port$requestUri" + (if (queryString != null) "?$queryString" else "")
         
         logger.info("Proxying request: ${request.method} $requestUri -> $targetUrl")
         
