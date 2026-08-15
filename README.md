@@ -1,254 +1,151 @@
-# Duralap Backend - Messaging & Video Calling
+# Duralap Backend — Modular Monolith Architecture
 
-A production-ready WhatsApp/Telegram-like messaging and video calling backend built with Spring Boot Kotlin.
+Duralap Backend is a Kotlin-based Spring Boot **Modular Monolith** application for real-time messaging, chat, voice/video presence, notifications, media storage, analytics, and search.
 
-## Features
+---
 
-- ✅ **User Authentication** - JWT-based auth with OAuth2 support
-- ✅ **Conversation Requests** - WhatsApp-style accept/reject flow
-- ✅ **Real-time Messaging** - Kafka-powered message delivery
-- ✅ **Video/Audio Calling** - WebRTC signaling via Redis Pub/Sub
-- ✅ **User Presence** - Redis-based online/offline status
-- ✅ **Rate Limiting** - Redis-based spam protection
-- ✅ **Caching** - Redis caching for optimal performance
-- ✅ **WebSocket** - Real-time communication
+## Architecture at a Glance
+
+The backend is organized into **one deployable Spring Boot application**, **9 strongly encapsulated domain business modules**, and **5 shared technical libraries**:
+
+```text
+DuralapBackend/
+├── app/                                       # Single executable Spring Boot application
+│   ├── build.gradle.kts
+│   └── src/main/
+│       ├── kotlin/com/example/duralap/
+│       │   └── DuralapApplication.kt          # Application Entry Point
+│       └── resources/
+│           └── application.properties         # Unified Configuration
+│
+├── modules/                                   # Domain Business Modules
+│   ├── auth/                                  # Authentication, JWT tokens, refresh tokens
+│   ├── user/                                  # User profiles, status, user caching
+│   ├── chat/                                  # Conversations & conversation requests
+│   ├── message/                               # Message dispatch, ACKs, sync, and history
+│   ├── presence/                              # Calls, WebRTC signaling relay, presence cache
+│   ├── notification/                          # Real-time and persistent notifications
+│   ├── media/                                 # Supabase media storage & signed URLs
+│   ├── search/                                # Full-text cursor search across users & chats
+│   └── analytics/                             # Platform aggregates & metrics
+│
+├── shared/                                    # Shared Technical Libraries
+│   ├── shared-kernel/                         # DTOs, domain events, shared enums, exceptions
+│   ├── shared-security/                       # Stateless JWT filter & security configuration
+│   ├── shared-mongo/                          # Mongo client & compound index initializer
+│   ├── shared-redis/                          # Redis template & sliding window rate limiter
+│   └── shared-websocket/                      # Unified STOMP broker on port 8080 (/websocket)
+│
+├── Dockerfile                                 # Multi-stage single-container build
+├── docker-compose.yml                         # Minimal deployment
+├── run.sh                                     # Universal startup script
+├── settings.gradle.kts                        # Modular Monolith Gradle settings
+└── build.gradle.kts                           # Unified dependency & Kotlin compiler config
+```
+
+---
 
 ## Tech Stack
 
-- **Backend**: Spring Boot 4.0.3, Kotlin 2.2.21
-- **Database**: MongoDB (primary storage)
-- **Cache**: Redis (caching, rate limiting, presence)
-- **Messaging**: Kafka (event streaming)
-- **Security**: JWT, Spring Security, OAuth2
-- **Real-time**: WebSocket, WebRTC
+- **Language & Runtime**: Kotlin 2.0.21 on Java 21 (JVM)
+- **Framework**: Spring Boot 3.4.1 (Web, Security, Data MongoDB, Data Redis, WebSocket/STOMP)
+- **Database**: MongoDB Atlas (High-throughput Compound Indexes)
+- **Cache & Real-time PubSub**: Upstash Redis (Sliding Window Rate Limiting, WebRTC Relay)
+- **Object Storage**: Supabase Storage
+- **Security**: Stateless HS512 JWT Authentication + Argon2 Password Hashing
 
-## Quick Start
+---
 
-### Prerequisites
-- Java 21+
-- MongoDB
-- Redis
-- Kafka (optional, for messaging)
+## Quick Start: Choose Your Mode
+
+Duralap Backend supports both **Local Native Execution (Without Docker)** and **Containerized Execution (With Docker)**.
+
+### Option 1: Run WITHOUT Docker (Local JVM / Fastest for Development)
+
+You can run the backend directly on your host machine using Gradle or the pre-built JAR:
+
+```bash
+# 1. Start directly via Universal Script
+./run.sh --local
+
+# OR start directly via Gradle
+cd DuralapBackend
+./gradlew :app:bootRun
+
+# OR build and run the executable JAR
+./run.sh --jar
+```
+
+- **Database / Cache**: By default, it connects to MongoDB Atlas & Upstash Redis automatically without requiring any local database installations.
+- **Custom Configuration**: Copy `.env.example` to `.env` to configure your own MongoDB, Redis, or Supabase credentials.
+
+---
+
+### Option 2: Run WITH Docker (Full Container Stack)
+
+If you prefer running inside Docker containers with local containerized Redis:
+
+```bash
+# 1. Start Docker Compose via Universal Script
+./run.sh --docker
+
+# OR directly with Docker Compose
+cd DuralapBackend
+docker compose up --build -d
+```
+
+- **Stop Containers**:
+  ```bash
+  ./run.sh stop
+  # or: docker compose down
+  ```
+
+---
+
+### Application Endpoints
+
+Regardless of execution mode, the endpoints are mapped consistently:
+
+| Service / Endpoint | URL | Description |
+| :--- | :--- | :--- |
+| **REST API Base** | `http://localhost:8080/api` | All domain module REST endpoints |
+| **WebSocket & STOMP** | `ws://localhost:8080/websocket` | Real-time chat, typing indicators, signaling |
+| **Actuator Health** | `http://localhost:8080/actuator/health` | Application healthcheck |
+| **Actuator Metrics** | `http://localhost:8080/actuator/metrics` | Prometheus & JVM performance metrics |
+| **LAN / Android Device** | `http://<YOUR_LOCAL_IP>:8080` | Real mobile device access on Wi-Fi |
+| **Android Emulator** | `http://10.0.2.2:8080` | Local Android Studio emulator bridge |
+
+---
+
+## Universal CLI Script Reference (`run.sh`)
+
+| Command | Action |
+| :--- | :--- |
+| `./run.sh` | Smart launcher (auto-detects Docker daemon or runs local JVM) |
+| `./run.sh --local` | Runs Spring Boot locally on JVM without Docker (`:app:bootRun`) |
+| `./run.sh --docker` | Builds image and starts Docker Compose stack (`docker compose up -d`) |
+| `./run.sh --jar` | Builds and runs standalone executable JAR |
+| `./run.sh --build` | Compiles all modules and packages `bootJar` |
+| `./run.sh --test` | Runs JUnit test suite across all 14 modules (`./gradlew check`) |
+| `./run.sh --status` | Checks HTTP `/actuator/health` status |
+| `./run.sh --stop` | Stops Docker containers and background daemons |
+| `./run.sh --help` | Displays interactive help menu |
+
+---
+
+## Local Development & Testing
+
+### Build and Run Tests
+```bash
+./gradlew check
+```
+
+### Build Executable Application JAR
+```bash
+./gradlew :app:bootJar
+```
 
 ### Run Locally
-
 ```bash
-# Clone repository
-git clone <repository-url>
-cd DuralapBackend-master
-
-# Run with default settings (uses embedded defaults)
-./mvnw spring-boot:run
-
-# Or build and run
-./mvnw clean package -DskipTests
-java -jar target/duralap-0.0.1-SNAPSHOT.jar
+./gradlew :app:bootRun
 ```
-
-### Production Deployment
-
-```bash
-# Set environment variables
-export MONGODB_URI="your-mongodb-connection-string"
-export REDIS_HOST="your-redis-host"
-export REDIS_PASSWORD="your-redis-password"
-export JWT_SECRET="your-secure-jwt-secret-min-64-chars"
-export SERVER_PORT="8080"
-export KAFKA_BOOTSTRAP_SERVERS="your-kafka-brokers"
-
-# Run with environment variables
-java -jar target/duralap-0.0.1-SNAPSHOT.jar
-```
-
-### Docker Deployment
-
-```bash
-# Using docker-compose
-docker-compose up -d
-
-# Or build custom image
-docker build -t duralap-backend .
-docker run -p 8080:8080 \
-  -e MONGODB_URI="..." \
-  -e REDIS_HOST="..." \
-  duralap-backend
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login with credentials
-- `POST /api/auth/refresh` - Refresh JWT token
-
-### Users
-- `GET /api/users/{id}` - Get user by ID
-- `GET /api/users/username/{username}` - Get user by username
-- `GET /api/users/search?query=...` - Search users
-- `PUT /api/users/{id}` - Update user profile
-
-### Conversations
-- `POST /api/conversations/start-with` - Start conversation (creates request)
-- `GET /api/conversations/my` - Get my conversations
-- `GET /api/conversations/{id}` - Get conversation details
-- `DELETE /api/conversations/{id}` - Delete conversation
-
-### Conversation Requests
-- `GET /api/conversation-requests/pending` - Get pending requests
-- `POST /api/conversation-requests/accept` - Accept request
-- `POST /api/conversation-requests/reject` - Reject request
-- `POST /api/conversation-requests/cancel` - Cancel sent request
-
-### Messages
-- `POST /api/messages` - Send message
-- `GET /api/messages/{conversationId}` - Get messages (paginated)
-- `PUT /api/messages/{id}/read` - Mark as read
-
-### Calls
-- `POST /api/cals/initiate` - Initiate call
-- `POST /api/calls/{id}/accept` - Accept call
-- `POST /api/calls/{id}/reject` - Reject call
-- `POST /api/calls/{id}/end` - End call
-
-## Configuration
-
-### application.properties
-
-Key configuration options:
-
-```properties
-# Server
-server.port=8080
-
-# MongoDB
-spring.data.mongodb.uri=${MONGODB_URI}
-
-# Redis
-spring.data.redis.host=${REDIS_HOST}
-spring.data.redis.password=${REDIS_PASSWORD}
-
-# JWT
-app.jwt.secret=${JWT_SECRET}
-app.jwt.expiration-in-ms=86400000
-
-# Kafka
-spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS}
-```
-
-### Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `MONGODB_URI` | MongoDB connection string | Yes |
-| `REDIS_HOST` | Redis server host | Yes |
-| `REDIS_PORT` | Redis server port | No (default: 6379) |
-| `REDIS_PASSWORD` | Redis password | Yes |
-| `JWT_SECRET` | JWT signing secret (min 64 chars) | Yes |
-| `SERVER_PORT` | Server port | No (default: 8080) |
-| `KAFKA_BOOTSTRAP_SERVERS` | Kafka brokers | No |
-
-## Performance
-
-### Optimizations Applied
-- **Database Indexes**: 9+ compound indexes for fast queries
-- **Redis Caching**: User profile caching (30min TTL)
-- **Connection Pooling**: MongoDB (100), Redis (20), Tomcat (200 threads)
-- **Rate Limiting**: 60 msgs/min, 10 requests/hour
-- **Compression**: GZIP enabled (60-70% smaller responses)
-- **Kafka**: Batch processing, Snappy compression
-
-### Benchmarks
-- User lookup: 1-5ms (cached)
-- Message send: 20-40ms
-- Concurrent users: ~5,000
-- Response compression: 60-70%
-
-## Architecture
-
-```
-┌─────────────┐
-│   Client    │ (Android/Web)
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────┐
-│  Spring Boot    │
-│  REST API + WS  │
-└──────┬──────────┘
-       │
-       ├──────────────┐
-       ▼              ▼
-┌─────────────┐ ┌──────────┐
-│  MongoDB    │ │  Redis   │
-│  (Storage)  │ │ (Cache)  │
-└─────────────┘ └──────────┘
-       │
-       ▼
-┌─────────────┐
-│   Kafka     │
-│  (Events)   │
-└─────────────┘
-```
-
-## Security
-
-- JWT-based authentication
-- Password encryption (BCrypt)
-- Rate limiting (Redis)
-- Input validation
-- CORS configuration
-- OAuth2 support (Google, Facebook, GitHub)
-
-## Monitoring
-
-### Health Checks
-- `GET /actuator/health` - Application health
-- `GET /actuator/metrics` - Performance metrics
-- `GET /actuator/prometheus` - Prometheus metrics
-
-### Logs
-- Application logs: `logs/duralap.log`
-- Access logs: Configurable
-- Log level: INFO (production)
-
-## Development
-
-### Build
-```bash
-./mvnw clean compile
-```
-
-### Test
-```bash
-./mvnw test
-```
-
-### Package
-```bash
-./mvnw clean package -DskipTests
-```
-
-## Project Structure
-
-```
-src/main/kotlin/com/example/duralap/
-├── config/           # Configuration classes
-├── controller/       # REST controllers
-├── database/         # Models, DTOs, repositories
-├── consumers/        # Kafka consumers
-├── events/           # Event classes
-├── exception/        # Error handling
-├── security/         # Security configuration
-├── service/          # Business logic
-│   ├── cache/        # Caching services
-│   └── signaling/    # WebRTC signaling
-└── DuralapApplication.kt
-```
-
-## License
-
-MIT License
-
-## Support
-
-For issues and questions, please create an issue in the repository.

@@ -1,23 +1,22 @@
 rootProject.name = "duralap-backend"
 
-// Common library modules
-include("common:common-dto")
-include("common:common-utils")
-include("common:common-events")
-include("common:common-security")
-include("common:common-mongo")
-include("common:common-redis")
-include("common:common-kafka")
-include("common:common-websocket")
+// Application entry point
+include("app")
 
-// Microservice modules
-include("gateway-service")
-include("auth-service")
-include("user-service")
-include("chat-service")
-include("message-service")
-include("media-service")
-include("presence-service")
-include("notification-service")
-include("analytics-service")
-include("search-service")
+// Shared modules
+include("shared:shared-kernel")
+include("shared:shared-security")
+include("shared:shared-mongo")
+include("shared:shared-redis")
+include("shared:shared-websocket")
+
+// Business modules
+include("modules:auth")
+include("modules:user")
+include("modules:chat")
+include("modules:message")
+include("modules:presence")
+include("modules:notification")
+include("modules:media")
+include("modules:search")
+include("modules:analytics")
