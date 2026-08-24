@@ -13,14 +13,10 @@ import java.time.Duration
 @Configuration
 class MongoIndexConfig(private val mongoTemplate: MongoTemplate) {
 
-    @Value("\${spring.data.mongodb.uri:NOT_FOUND}")
-    private lateinit var mongoUri: String
-
     private val logger = LoggerFactory.getLogger(MongoIndexConfig::class.java)
 
     @EventListener(ApplicationReadyEvent::class) fun ensureIndexes() {
         logger.info("Initializing MongoDB Compound Indexes for high-throughput scaling...")
-        logger.info("Current injected MongoDB URI is: $mongoUri")
     
         ensureMessageIndexes()
         ensureCallIndexes()

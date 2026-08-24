@@ -7,9 +7,9 @@ import org.springframework.web.client.RestClient
 
 @Service
 class SupabaseStorageService(
-    @Value("\${supabase.url:https://ussecjukilmnfbvozjxq.supabase.co}") private val supabaseUrl: String,
+    @Value("\${supabase.url:}") private val supabaseUrl: String,
     @Value("\${supabase.bucket:media}") private val bucket: String,
-    @Value("\${supabase.api.key:REPLACE_WITH_SUPABASE_ANON_KEY}") private val apiKey: String
+    @Value("\${supabase.api.key:}") private val apiKey: String
 ) {
     private val restClient = RestClient.builder()
         .baseUrl(supabaseUrl)

@@ -112,8 +112,8 @@ load_env() {
     set +a
     ok "Environment variables loaded successfully."
   else
-    warn "No .env file found. Using default cloud credentials (MongoDB Atlas & Upstash Redis)."
-    warn "Copy .env.example to .env to configure local overrides."
+    warn "No .env file found."
+    warn "Copy .env.example to .env and configure your environment variables before running."
   fi
 }
 

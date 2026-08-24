@@ -22,7 +22,7 @@ class MongoConfig {
 
     @Bean
     fun mongoClient(): MongoClient {
-        logger.info("Initializing explicit MongoClient with URI: {}", mongoUri)
+        logger.info("Initializing explicit MongoClient from configured MongoDB connection string.")
         return MongoClients.create(mongoUri)
     }
 

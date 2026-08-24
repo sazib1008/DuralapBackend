@@ -10,7 +10,7 @@ import java.util.*
 @Component
 class JwtTokenProvider {
 
-    @Value("\${app.jwt.secret:mySuperSecretKeyForDuralapAppWhichIsVerySecureAndLongEnoughForHS512}")
+    @Value("\${app.jwt.secret}")
     private lateinit var jwtSecret: String
 
     @Value("\${app.jwt.expiration-in-ms:86400000}") // 24 hours default for access token
