@@ -32,10 +32,10 @@ COPY --from=builder /app/app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
-ENV JAVA_OPTS="-Xmx768m -Xms256m -XX:+UseG1GC"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
 ENV SPRING_PROFILES_ACTIVE="docker"
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -fsS http://localhost:8080/actuator/health || exit 1
+  CMD curl -fsS "http://localhost:${PORT:-8080}/actuator/health" || exit 1
 
 ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]
