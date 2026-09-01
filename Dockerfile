@@ -32,7 +32,7 @@ COPY --from=builder /app/app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
 ENV SPRING_PROFILES_ACTIVE="docker"
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

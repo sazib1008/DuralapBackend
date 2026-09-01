@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: duralapbackend
+    runtime: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: docker
+      - key: PORT
+        value: 8080
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: REDIS_SSL_ENABLED
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: JWT_REFRESH_EXPIRATION
+        value: "604800000"
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: media
+      - key: SUPABASE_API_KEY
+        sync: false
+      - key: WEBRTC_TURN_URL
+        sync: false
+      - key: WEBRTC_TURN_USERNAME
+        sync: false
+      - key: WEBRTC_TURN_CREDENTIAL
+        sync: false
